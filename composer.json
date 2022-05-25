@@ -1,0 +1,29 @@
+{
+  "name": "carlonicora/minimalism-service-webauth",
+  "description": "Web Auth service for minimalism",
+  "version": "1.0.0",
+  "homepage": "https://carlonicora.com",
+  "time": "2022-05-25",
+  "license": "MIT",
+  "type": "library",
+  "minimum-stability": "beta",
+  "authors": [
+    {
+      "name": "Carlo Nicora",
+      "email": "carlo@carlonicora.com",
+      "homepage": "https://carlonicora.com",
+      "role": "Developer"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "CarloNicora\\Minimalism\\Services\\WebAuth\\":"src/"
+    }
+  },
+  "require": {
+    "php": ">=8.1",
+    "carlonicora/jsonapi": "~3",
+    "carlonicora/minimalism": "~13.0",
+    "carlonicora/minimalism-service-api-caller": "~1.0.0"
+  }
+}

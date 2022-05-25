@@ -42,21 +42,23 @@ class WebAuth extends AbstractService
     public function initialise(
     ): void
     {
-        if(!str_ends_with($this->MINIMALISM_SERVICE_WEBAUTH_URL, '/')){
-            $this->MINIMALISM_SERVICE_WEBAUTH_URL .= '/';
-        }
+        if ($_SESSION !== null) {
+            if (!str_ends_with($this->MINIMALISM_SERVICE_WEBAUTH_URL, '/')) {
+                $this->MINIMALISM_SERVICE_WEBAUTH_URL .= '/';
+            }
 
-        if (array_key_exists('token', $_SESSION) && $_SESSION['token'] !== null) {
-            $this->token = $_SESSION['token'];
-        } elseif (array_key_exists('token', $_COOKIE) && $_COOKIE['token'] !== null) {
-            $this->token = $_COOKIE['token'];
-        }
+            if (array_key_exists('token', $_SESSION) && $_SESSION['token'] !== null) {
+                $this->token = $_SESSION['token'];
+            } elseif (array_key_exists('token', $_COOKIE) && $_COOKIE['token'] !== null) {
+                $this->token = $_COOKIE['token'];
+            }
 
-        if (array_key_exists('pageBeforeLogin', $_SESSION)){
-            $this->pageBeforeLogin = $_SESSION['pageBeforeLogin'];
-        }
+            if (array_key_exists('pageBeforeLogin', $_SESSION)) {
+                $this->pageBeforeLogin = $_SESSION['pageBeforeLogin'];
+            }
 
-        $this->state = $_SESSION['authState'] ?? null;
+            $this->state = $_SESSION['authState'] ?? null;
+        }
     }
 
     /**
@@ -65,23 +67,25 @@ class WebAuth extends AbstractService
     public function destroy(
     ): void
     {
-        if ($this->token !== null) {
-            if (!array_key_exists('token', $_COOKIE) || $_COOKIE['token'] === null) {
-                /** @noinspection SummerTimeUnsafeTimeManipulationInspection */
-                setcookie('token', $this->token, time() + (60 * 60 * 24 * 365), "/", ini_get('session.cookie_domain'), ini_get('session.cookie_secure'), ini_get('session.cookie_httponly'));
+        if (isset($_SESSION)) {
+            if ($this->token !== null) {
+                if (!array_key_exists('token', $_COOKIE) || $_COOKIE['token'] === null) {
+                    /** @noinspection SummerTimeUnsafeTimeManipulationInspection */
+                    setcookie('token', $this->token, time() + (60 * 60 * 24 * 365), "/", ini_get('session.cookie_domain'), ini_get('session.cookie_secure'), ini_get('session.cookie_httponly'));
+                }
+
+                $_SESSION['token'] = $this->token;
             }
 
-            $_SESSION['token'] = $this->token;
-        }
+            $this->token = null;
 
-        $this->token = null;
+            if ($this->state !== null) {
+                $_SESSION['authState'] = $this->state;
+            }
 
-        if ($this->state !== null){
-            $_SESSION['authState'] = $this->state;
-        }
-
-        if ($this->pageBeforeLogin !== null){
-            $_SESSION['pageBeforeLogin'] = $this->pageBeforeLogin;
+            if ($this->pageBeforeLogin !== null) {
+                $_SESSION['pageBeforeLogin'] = $this->pageBeforeLogin;
+            }
         }
     }
 
@@ -145,10 +149,12 @@ class WebAuth extends AbstractService
         string $state,
     ): bool
     {
-        if ($this->state === $state){
-            $this->state = null;
-            unset($_SESSION['authState']);
-            return true;
+        if (isset($_SESSION)) {
+            if ($this->state === $state) {
+                $this->state = null;
+                unset($_SESSION['authState']);
+                return true;
+            }
         }
 
         return false;
@@ -160,11 +166,15 @@ class WebAuth extends AbstractService
     public function logout(
     ): never
     {
-        $this->token = null;
-        setcookie('token', '', time() - 3600, ini_get('session.cookie_path'), ini_get('session.cookie_domain'), ini_get('session.cookie_secure'), ini_get('session.cookie_httponly'));
-        unset( $_SESSION['userId'],$_SESSION['token'],$_COOKIE['token']);
-        /** @noinspection UnusedFunctionResultInspection */
-        $this->redirectToPreviousPage();
+        if (isset($_SESSION)) {
+            $this->token = null;
+            setcookie('token', '', time() - 3600, ini_get('session.cookie_path'), ini_get('session.cookie_domain'), ini_get('session.cookie_secure'), ini_get('session.cookie_httponly'));
+            unset($_SESSION['userId'], $_SESSION['token'], $_COOKIE['token']);
+            /** @noinspection UnusedFunctionResultInspection */
+            $this->redirectToPreviousPage();
+        }
+
+        exit;
     }
 
     /**

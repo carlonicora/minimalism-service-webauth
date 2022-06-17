@@ -42,7 +42,7 @@ class WebAuth extends AbstractService
     public function initialise(
     ): void
     {
-        if ($_SESSION !== null) {
+        if (isset($_SESSION)) {
             if (!str_ends_with($this->MINIMALISM_SERVICE_WEBAUTH_URL, '/')) {
                 $this->MINIMALISM_SERVICE_WEBAUTH_URL .= '/';
             }
@@ -149,12 +149,10 @@ class WebAuth extends AbstractService
         string $state,
     ): bool
     {
-        if (isset($_SESSION)) {
-            if ($this->state === $state) {
-                $this->state = null;
-                unset($_SESSION['authState']);
-                return true;
-            }
+        if (isset($_SESSION) && $this->state === $state) {
+            $this->state = null;
+            unset($_SESSION['authState']);
+            return true;
         }
 
         return false;
@@ -178,21 +176,43 @@ class WebAuth extends AbstractService
     }
 
     /**
+     * @return string
+     * @throws Exception
+     */
+    public function getAuthLink(
+    ): string
+    {
+        $this->pageBeforeLogin = substr($this->path->getUrl(), 0, -1) . $_SERVER['REQUEST_URI'];
+
+        $response = $this->MINIMALISM_SERVICE_WEBAUTH_URL;
+
+        if ($this->MINIMALISM_SERVICE_WEBAUTH_HOSTNAME !== null){
+            $parts = explode('/', $this->MINIMALISM_SERVICE_WEBAUTH_URL);
+
+            $response = $parts[0] . '//' . $this->MINIMALISM_SERVICE_WEBAUTH_HOSTNAME . '/';
+            $newParts = array_slice($parts, 3);
+            foreach ($newParts ?? [] as $part) {
+                if ($part !== '') {
+                    $response .= $part . '/';
+                }
+            }
+        }
+
+        $response .= 'auth/index/' .
+            '?client_id=' . $this->MINIMALISM_SERVICE_WEBAUTH_CLIENT_ID .
+            '&state=' . $this->getState();
+
+        return $response;
+    }
+
+    /**
      * @return never
      * @throws Exception
      */
     public function redirectToAuth(
     ): never
     {
-        $this->pageBeforeLogin = substr($this->path->getUrl(), 0, -1) . $_SERVER['REQUEST_URI'];
-
-        $url = $this->MINIMALISM_SERVICE_WEBAUTH_HOSTNAME !== null
-            ? explode('/', $this->MINIMALISM_SERVICE_WEBAUTH_URL, 1)[0] . '://' . $this->MINIMALISM_SERVICE_WEBAUTH_HOSTNAME . '/'
-            : $this->MINIMALISM_SERVICE_WEBAUTH_URL;
-
-        $url .= 'auth' .
-            '?client_id=' . $this->MINIMALISM_SERVICE_WEBAUTH_CLIENT_ID .
-            '&state=' . $this->getState();
+        $url = $this->getAuthLink();
 
         header('Location:' . $url);
         exit;
